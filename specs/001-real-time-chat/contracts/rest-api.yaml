@@ -1,0 +1,488 @@
+openapi: 3.0.0
+info:
+  title: Real-time Chat System API
+  description: REST API for chat room management and message history
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+paths:
+  /auth/login:
+    post:
+      summary: User authentication
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: password123
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/register:
+    post:
+      summary: User registration
+      description: Create new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  example: john_doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: password123
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '409':
+          description: Username or email already exists
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /rooms:
+    get:
+      summary: List chat rooms
+      description: Get list of available chat rooms for authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by room type
+          schema:
+            type: string
+            enum: [public, private, direct]
+        - name: limit
+          in: query
+          description: Number of rooms to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of rooms to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of chat rooms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rooms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatRoom'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create chat room
+      description: Create a new chat room
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: General Discussion
+                description:
+                  type: string
+                  maxLength: 500
+                  example: Room for general conversation
+                type:
+                  type: string
+                  enum: [public, private]
+                  example: public
+      responses:
+        '201':
+          description: Chat room created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /rooms/{roomId}:
+    get:
+      summary: Get chat room details
+      description: Get details of a specific chat room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: Chat room identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chat room details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatRoom'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Chat room not found
+
+  /rooms/{roomId}/messages:
+    get:
+      summary: Get message history
+      description: Get paginated message history for a chat room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: Chat room identifier
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of messages to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: before
+          in: query
+          description: Get messages before this timestamp
+          schema:
+            type: string
+            format: date-time
+        - name: after
+          in: query
+          description: Get messages after this timestamp
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Message history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Access denied to chat room
+        '404':
+          description: Chat room not found
+
+  /rooms/{roomId}/members:
+    get:
+      summary: Get room members
+      description: Get list of users in a chat room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: Chat room identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoomMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Access denied to chat room
+
+    post:
+      summary: Join chat room
+      description: Join user to a chat room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          description: Chat room identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully joined room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomMember'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Chat room not found
+        '409':
+          description: Already a member of the room
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - username
+        - email
+
+    ChatRoom:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [public, private, direct]
+        ownerId:
+          type: string
+          format: uuid
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - type
+        - ownerId
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        roomId:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        type:
+          type: string
+          enum: [text, system, join, leave]
+        metadata:
+          type: object
+        author:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+        editedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - roomId
+        - userId
+        - content
+        - type
+        - author
+        - createdAt
+
+    RoomMember:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        role:
+          type: string
+          enum: [owner, admin, member]
+        joinedAt:
+          type: string
+          format: date-time
+        lastReadAt:
+          type: string
+          format: date-time
+        presenceStatus:
+          type: string
+          enum: [online, away, offline]
+      required:
+        - user
+        - role
+        - joinedAt
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+      required:
+        - total
+        - limit
+        - offset
+        - hasMore
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+      required:
+        - error
+        - message
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            message: Authentication token required
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: ValidationError
+            message: Invalid request data
+            details:
+              email: Invalid email format
+              password: Password too short

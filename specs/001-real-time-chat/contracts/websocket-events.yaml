@@ -1,0 +1,380 @@
+# WebSocket Events Contract
+# Real-time Chat System WebSocket API
+
+info:
+  title: Real-time Chat WebSocket Events
+  description: Socket.io event definitions for real-time messaging
+  version: 1.0.0
+
+# Connection Events
+connection:
+  event: connect
+  description: Client establishes WebSocket connection
+  authentication: JWT token in query params or headers
+  middleware:
+    - authentication
+    - rate_limiting
+  response:
+    success:
+      event: connected
+      data:
+        userId: string (uuid)
+        connectionId: string
+        timestamp: string (iso8601)
+    error:
+      event: connect_error
+      data:
+        error: string
+        message: string
+
+disconnection:
+  event: disconnect
+  description: Client disconnects from WebSocket
+  cleanup:
+    - remove from all rooms
+    - update presence status
+    - cleanup Redis session data
+  broadcast:
+    event: user_left
+    to: all_user_rooms
+    data:
+      userId: string (uuid)
+      timestamp: string (iso8601)
+
+# Room Management Events
+join_room:
+  event: join_room
+  description: User joins a chat room
+  input:
+    roomId: string (required)
+    password: string (optional, for private rooms)
+  validation:
+    - user has permission to join room
+    - room exists and is accessible
+    - user not already in room
+  response:
+    success:
+      event: room_joined
+      data:
+        roomId: string
+        roomName: string
+        memberCount: integer
+        recentMessages: array[Message] (last 50)
+        members: array[RoomMember]
+        timestamp: string (iso8601)
+    error:
+      event: join_room_error
+      data:
+        error: string
+        message: string
+        roomId: string
+  broadcast:
+    event: user_joined
+    to: room_members
+    data:
+      user:
+        id: string (uuid)
+        username: string
+      roomId: string
+      timestamp: string (iso8601)
+
+leave_room:
+  event: leave_room
+  description: User leaves a chat room
+  input:
+    roomId: string (required)
+  validation:
+    - user is currently in room
+    - room exists
+  response:
+    success:
+      event: room_left
+      data:
+        roomId: string
+        timestamp: string (iso8601)
+    error:
+      event: leave_room_error
+      data:
+        error: string
+        message: string
+        roomId: string
+  broadcast:
+    event: user_left
+    to: room_members
+    data:
+      user:
+        id: string (uuid)
+        username: string
+      roomId: string
+      timestamp: string (iso8601)
+
+# Messaging Events
+send_message:
+  event: send_message
+  description: User sends a message to a room
+  input:
+    roomId: string (required)
+    content: string (required, 1-2000 chars)
+    type: string (optional, default: "text")
+    replyTo: integer (optional, message ID)
+    metadata: object (optional)
+  validation:
+    - user is member of room
+    - content meets length requirements
+    - content passes moderation filters
+    - rate limiting checks
+  processing:
+    - save message to PostgreSQL
+    - update room last activity
+    - update user presence
+  response:
+    success:
+      event: message_sent
+      data:
+        messageId: integer
+        roomId: string
+        timestamp: string (iso8601)
+        status: string ("sent")
+    error:
+      event: send_message_error
+      data:
+        error: string
+        message: string
+        roomId: string
+        tempId: string (if provided by client)
+  broadcast:
+    event: message_received
+    to: room_members
+    exclude: sender
+    data:
+      id: integer
+      roomId: string
+      content: string
+      type: string
+      author:
+        id: string (uuid)
+        username: string
+      replyTo: integer (optional)
+      metadata: object
+      createdAt: string (iso8601)
+
+# Message Management Events
+edit_message:
+  event: edit_message
+  description: User edits their own message
+  input:
+    messageId: integer (required)
+    content: string (required, 1-2000 chars)
+  validation:
+    - user owns the message
+    - message is less than 24 hours old
+    - content meets requirements
+  response:
+    success:
+      event: message_edited
+      data:
+        messageId: integer
+        content: string
+        editedAt: string (iso8601)
+    error:
+      event: edit_message_error
+      data:
+        error: string
+        message: string
+        messageId: integer
+  broadcast:
+    event: message_updated
+    to: room_members
+    data:
+      id: integer
+      content: string
+      editedAt: string (iso8601)
+      roomId: string
+
+delete_message:
+  event: delete_message
+  description: User deletes their own message
+  input:
+    messageId: integer (required)
+  validation:
+    - user owns the message or has admin role
+    - message exists
+  response:
+    success:
+      event: message_deleted
+      data:
+        messageId: integer
+        timestamp: string (iso8601)
+    error:
+      event: delete_message_error
+      data:
+        error: string
+        message: string
+        messageId: integer
+  broadcast:
+    event: message_removed
+    to: room_members
+    data:
+      messageId: integer
+      roomId: string
+      timestamp: string (iso8601)
+
+# Presence Events
+update_presence:
+  event: update_presence
+  description: User updates their presence status
+  input:
+    status: string (required: "online", "away", "offline")
+    currentRoom: string (optional)
+  validation:
+    - status is valid enum value
+    - room exists if provided
+  processing:
+    - update Redis presence data
+    - refresh TTL
+  response:
+    success:
+      event: presence_updated
+      data:
+        status: string
+        timestamp: string (iso8601)
+    error:
+      event: update_presence_error
+      data:
+        error: string
+        message: string
+  broadcast:
+    event: presence_changed
+    to: user_contacts
+    data:
+      userId: string (uuid)
+      status: string
+      currentRoom: string (optional)
+      timestamp: string (iso8601)
+
+# Typing Indicators
+start_typing:
+  event: start_typing
+  description: User starts typing in a room
+  input:
+    roomId: string (required)
+  validation:
+    - user is member of room
+  broadcast:
+    event: user_typing
+    to: room_members
+    exclude: sender
+    data:
+      userId: string (uuid)
+      username: string
+      roomId: string
+      timestamp: string (iso8601)
+  ttl: 3 seconds (auto-clear)
+
+stop_typing:
+  event: stop_typing
+  description: User stops typing in a room
+  input:
+    roomId: string (required)
+  broadcast:
+    event: user_stopped_typing
+    to: room_members
+    exclude: sender
+    data:
+      userId: string (uuid)
+      roomId: string
+      timestamp: string (iso8601)
+
+# System Events (Server-initiated)
+system_message:
+  event: system_message
+  description: Server sends system notification
+  data:
+    type: string ("announcement", "warning", "maintenance")
+    content: string
+    priority: string ("low", "medium", "high")
+    timestamp: string (iso8601)
+  broadcast:
+    to: all_connected_users
+
+room_updated:
+  event: room_updated
+  description: Room settings or metadata changed
+  data:
+    roomId: string
+    changes:
+      name: string (optional)
+      description: string (optional)
+      settings: object (optional)
+    updatedBy: string (uuid)
+    timestamp: string (iso8601)
+  broadcast:
+    to: room_members
+
+# Error Events
+rate_limit_exceeded:
+  event: rate_limit_exceeded
+  description: User has exceeded rate limits
+  data:
+    error: string
+    retryAfter: integer (seconds)
+    endpoint: string
+    timestamp: string (iso8601)
+
+# Health Check Events
+ping:
+  event: ping
+  description: Client sends heartbeat
+  response:
+    event: pong
+    data:
+      timestamp: string (iso8601)
+      serverTime: string (iso8601)
+
+# Data Types
+types:
+  Message:
+    id: integer
+    roomId: string
+    userId: string (uuid)
+    content: string
+    type: string ("text", "system", "join", "leave")
+    author:
+      id: string (uuid)
+      username: string
+    replyTo: integer (optional)
+    metadata: object
+    createdAt: string (iso8601)
+    editedAt: string (iso8601, optional)
+
+  RoomMember:
+    user:
+      id: string (uuid)
+      username: string
+    role: string ("owner", "admin", "member")
+    joinedAt: string (iso8601)
+    presenceStatus: string ("online", "away", "offline")
+
+# Rate Limiting
+rate_limits:
+  send_message: 30 per minute per user
+  join_room: 10 per minute per user
+  update_presence: 60 per minute per user
+  start_typing: 20 per minute per user
+  global: 100 events per minute per user
+
+# Authentication
+authentication:
+  method: JWT token
+  location: query parameter 'token' or Authorization header
+  validation: verify signature and expiration
+  user_extraction: decode user ID from token payload
+
+# Error Handling
+error_format:
+  event: "{action}_error"
+  data:
+    error: string (error code)
+    message: string (human readable)
+    timestamp: string (iso8601)
+    details: object (optional)
