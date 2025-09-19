@@ -20,33 +20,39 @@ Real-time chat system with WebSocket messaging, message persistence, and user pr
 
 ### Setup
 
-1. **Start database services**:
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/KVSSetty/realtime-chat.git
+   cd realtime-chat
+   ```
+
+2. **Start database services**:
    ```bash
    docker-compose up -d
    ```
 
-2. **Setup and start backend**:
+3. **Setup and start backend**:
    ```bash
    cd backend
    npm install
-   cp .env.example .env
+   npm run db:seed    # Create demo users and rooms
    npm run dev
    ```
 
-3. **Setup and start frontend** (in a new terminal):
+4. **Setup and start frontend** (in a new terminal):
    ```bash
    cd frontend
    npm install
    npm start
    ```
 
-4. **Open your browser** and navigate to http://localhost:3000
+5. **Open your browser** and navigate to http://localhost:3000
 
 ### Default Demo Users
-After running `npm run db:seed` in the backend directory:
-- alice@example.com / password123
-- bob@example.com / password123
-- charlie@example.com / password123
+✅ Available after setup (automatically seeded):
+- **alice@example.com** / password123
+- **bob@example.com** / password123
+- **charlie@example.com** / password123
 
 ## Development Commands
 
@@ -76,7 +82,7 @@ npm test -- --watchAll=false  # Run tests once
 docker-compose up -d # Start PostgreSQL and Redis
 docker-compose down  # Stop all services
 redis-cli            # Access Redis CLI
-psql -h localhost -U postgres -d chat_db  # Access PostgreSQL
+psql -h localhost -p 5434 -U chat_user -d chat_db  # Access PostgreSQL
 ```
 
 ## Technology Stack
@@ -114,10 +120,10 @@ psql -h localhost -U postgres -d chat_db  # Access PostgreSQL
 
 ## Environment Configuration
 
-Copy `backend/.env.example` to `backend/.env` and configure:
+The backend `.env` file is already configured. If you need to modify it:
 
 ```env
-DATABASE_URL=postgresql://chat_user:chat_password@localhost:5432/chat_db
+DATABASE_URL=postgresql://chat_user:chat_password@localhost:5434/chat_db
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 JWT_EXPIRES_IN=24h
@@ -149,6 +155,21 @@ FRONTEND_URL=http://localhost:3000
 ├── docker-compose.yml      # PostgreSQL and Redis setup
 └── specs/                  # Feature specifications and documentation
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Docker not running**: Ensure Docker Desktop is running before `docker-compose up -d`
+2. **Port conflicts**: If ports 3000, 3001, or 5434 are in use, stop other services
+3. **Database connection issues**: Ensure PostgreSQL container is running with `docker ps`
+4. **Frontend compilation errors**: Delete `node_modules` and `package-lock.json`, then `npm install`
+
+### Verifying Setup
+
+- **Backend health**: Visit http://localhost:3001/health
+- **Frontend**: Visit http://localhost:3000
+- **Database**: `docker exec -it chatbot_postgres psql -U chat_user -d chat_db`
 
 ## Contributing
 
