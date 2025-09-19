@@ -6,6 +6,9 @@ Real-time chat system with WebSocket messaging, message persistence, and user pr
 
 - 🚀 **Real-time messaging** with Socket.io WebSockets
 - 👥 **Room-based chat** with public and private rooms
+- 🏗️ **Room creation & management** with intuitive UI modals
+- 🔍 **Room discovery** to browse and join public rooms
+- 📋 **Room sharing** with one-click invitation links
 - 🔐 **JWT authentication** with secure user sessions
 - 💾 **Message persistence** with PostgreSQL and date partitioning
 - 👀 **Typing indicators** and user presence tracking
@@ -53,6 +56,93 @@ Real-time chat system with WebSocket messaging, message persistence, and user pr
 - **alice@example.com** / password123
 - **bob@example.com** / password123
 - **charlie@example.com** / password123
+
+## How to Use
+
+### 🏁 Getting Started
+
+1. **Sign up** or **log in** using the demo accounts above
+2. After login, you'll see the main chat interface with:
+   - **Sidebar**: Room list and controls
+   - **Main area**: Chat messages and input
+   - **Header**: Room info and sharing options
+
+### 🏗️ Creating Chat Rooms
+
+1. **Click the "+" button** next to "Chat Rooms" in the sidebar
+2. **Fill out the form**:
+   - **Room Name**: Display name (e.g., "General Discussion")
+   - **Room ID**: Unique identifier (auto-generated from name)
+   - **Description**: Optional room purpose
+   - **Type**:
+     - **Public**: Anyone can discover and join
+     - **Private**: Invite-only access
+3. **Click "Create Room"** to create and auto-join
+
+### 🔍 Discovering & Joining Rooms
+
+#### Browse Public Rooms
+1. **Click the search icon (🔍)** next to "Chat Rooms"
+2. **Browse available rooms** with member counts and descriptions
+3. **Click "Join"** on any room to join instantly
+4. **Copy room links** using the copy button for sharing
+
+#### Join via Direct Link
+- If someone shares a room link, simply **click it**
+- You'll be prompted to join the room directly
+
+### 📋 Sharing & Inviting Others
+
+#### Share Room Links
+1. **Open any public room** you want to share
+2. **Click "Share"** in the room header
+3. **Link is auto-copied** to clipboard with format:
+   ```
+   Join me in "Room Name" chat room: https://yoursite.com/?room=room-id
+   ```
+4. **Paste anywhere**: Email, messaging apps, social media
+
+#### Invitation Methods
+- **Direct sharing**: Copy-paste room links
+- **Email invites**: Send room links via email
+- **Social media**: Share on platforms
+- **Messaging apps**: Send links via WhatsApp, Slack, etc.
+
+### 💬 Chatting Features
+
+#### Basic Messaging
+- **Type in the input** at bottom of chat
+- **Press Enter** to send messages
+- **See real-time messages** from other users
+
+#### Advanced Features
+- **Typing indicators**: See when others are typing
+- **User presence**: Green/yellow/red status indicators
+- **Message history**: Scroll up to see older messages
+- **Member list**: View member count in room header
+
+### 🎯 Room Types Explained
+
+#### Public Rooms 🌐
+- **Discoverable**: Appear in room browser
+- **Open access**: Anyone can join via link or browser
+- **Shareable**: Have share buttons and copy links
+- **Best for**: Communities, open discussions, public channels
+
+#### Private Rooms 🔒
+- **Hidden**: Don't appear in public discovery
+- **Invite-only**: Owner controls membership
+- **Secure**: Links don't work for non-members
+- **Best for**: Teams, private groups, sensitive discussions
+
+### 🚀 Pro Tips
+
+1. **Create themed rooms**: Make rooms for specific topics
+2. **Use descriptive names**: Help others understand room purpose
+3. **Share strategically**: Use public rooms for open communities
+4. **Bookmark room links**: Save important room URLs
+5. **Check member counts**: See room activity levels
+6. **Use room descriptions**: Explain the room's purpose clearly
 
 ## Development Commands
 
@@ -113,10 +203,26 @@ psql -h localhost -p 5434 -U chat_user -d chat_db  # Access PostgreSQL
 - `GET /api/rooms/:id/messages` - Get message history
 
 ### WebSocket Events
-- `join_room` / `room_joined` - Room management
+
+#### Room Management
+- `join_room` / `room_joined` - Join existing rooms
+- `leave_room` / `room_left` - Leave rooms
+- `user_joined` / `user_left` - Member join/leave notifications
+
+#### Messaging
 - `send_message` / `message_received` - Real-time messaging
+- `edit_message` / `message_updated` - Message editing
+- `delete_message` / `message_removed` - Message deletion
+
+#### User Interaction
 - `start_typing` / `user_typing` - Typing indicators
-- `update_presence` / `presence_updated` - User status
+- `stop_typing` / `user_stopped_typing` - Stop typing notifications
+- `update_presence` / `presence_changed` - User status updates
+
+#### Connection & Errors
+- `connected` - WebSocket authentication confirmed
+- `connect_error` - Connection failures
+- `rate_limit_exceeded` - Rate limiting notifications
 
 ## Environment Configuration
 
@@ -147,6 +253,15 @@ FRONTEND_URL=http://localhost:3000
 ├── frontend/
 │   ├── src/
 │   │   ├── components/     # React UI components
+│   │   │   ├── Chat.tsx           # Main chat layout
+│   │   │   ├── ChatRoom.tsx       # Room view with messages
+│   │   │   ├── Sidebar.tsx        # Room list and navigation
+│   │   │   ├── MessageList.tsx    # Message display
+│   │   │   ├── MessageInput.tsx   # Message composition
+│   │   │   ├── RoomCreationModal.tsx    # Room creation form
+│   │   │   ├── RoomBrowserModal.tsx     # Public room discovery
+│   │   │   ├── Login.tsx          # Authentication forms
+│   │   │   └── Register.tsx
 │   │   ├── context/        # Auth and Chat state management
 │   │   ├── services/       # API and WebSocket clients
 │   │   └── types/          # TypeScript definitions
@@ -164,6 +279,15 @@ FRONTEND_URL=http://localhost:3000
 2. **Port conflicts**: If ports 3000, 3001, or 5434 are in use, stop other services
 3. **Database connection issues**: Ensure PostgreSQL container is running with `docker ps`
 4. **Frontend compilation errors**: Delete `node_modules` and `package-lock.json`, then `npm install`
+
+### Room & Feature Issues
+
+5. **"Only logout button shows"**: Create your first room using the "+" button or "Create Your First Room"
+6. **WebSocket disconnected after login**: Refresh the page - connection should be stable after our fixes
+7. **Room links not working**: Ensure room is public and URL format is correct: `?room=room-id`
+8. **Can't join room**: Check if room is private (requires invitation) or if room ID is correct
+9. **Share button not copying**: Check browser clipboard permissions or use manual copy fallback
+10. **Room browser empty**: Create some public rooms first, or check if other users have created public rooms
 
 ### Verifying Setup
 
