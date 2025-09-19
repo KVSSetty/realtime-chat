@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useChat } from '../context/ChatContext';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -15,6 +15,8 @@ export function ChatRoom() {
     stopTyping,
     connectionStatus
   } = useChat();
+
+  const [showShareTooltip, setShowShareTooltip] = useState(false);
 
   if (!currentRoomId || !currentRoom) {
     return (
@@ -59,6 +61,23 @@ export function ChatRoom() {
     }
   };
 
+  const handleShareRoom = async () => {
+    if (!currentRoom || !currentRoomId) return;
+
+    const roomUrl = `${window.location.origin}/?room=${currentRoomId}`;
+    const shareText = `Join me in "${currentRoom.name}" chat room: ${roomUrl}`;
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setShowShareTooltip(true);
+      setTimeout(() => setShowShareTooltip(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy room link:', err);
+      // Fallback: show the link in an alert
+      alert(`Room link: ${roomUrl}`);
+    }
+  };
+
   const getRoomTypeIcon = () => {
     switch (currentRoom.type) {
       case 'private':
@@ -99,6 +118,29 @@ export function ChatRoom() {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Share button */}
+          {currentRoom.type === 'public' && (
+            <div className="relative">
+              <button
+                onClick={handleShareRoom}
+                className="flex items-center space-x-1 px-2 py-1 text-sm text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                title="Share room"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+                <span>Share</span>
+              </button>
+
+              {showShareTooltip && (
+                <div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-10">
+                  Link copied to clipboard!
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-gray-900"></div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Participants count */}
           <div className="flex items-center space-x-1 text-sm text-gray-500">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

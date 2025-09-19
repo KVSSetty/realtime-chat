@@ -100,9 +100,10 @@ class WebSocketService {
 
   connect(token: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.socket?.connected) {
-        resolve();
-        return;
+      // Always disconnect existing connection before creating new one
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
       }
 
       this.socket = io(WEBSOCKET_URL, {
@@ -112,6 +113,8 @@ class WebSocketService {
         forceNew: true
       });
 
+      let resolved = false;
+
       // Connection successful
       this.socket.on('connect', () => {
         console.log('WebSocket connected');
@@ -119,11 +122,14 @@ class WebSocketService {
         this.reconnectAttempts = 0;
       });
 
-      // Server confirms connection with user data
+      // Server confirms connection with user data - this is when we should resolve
       this.socket.on('connected', (data) => {
         console.log('Connection confirmed:', data);
         this.emit('connected', data);
-        resolve();
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
       });
 
       // Connection failed
@@ -135,7 +141,10 @@ class WebSocketService {
           message: error.message || 'Failed to connect',
           timestamp: new Date().toISOString()
         });
-        reject(error);
+        if (!resolved) {
+          resolved = true;
+          reject(error);
+        }
       });
 
       // Disconnection
@@ -152,6 +161,14 @@ class WebSocketService {
 
       // Set up all event listeners
       this.setupEventListeners();
+
+      // Add timeout to prevent hanging
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('Connection timeout: Server did not confirm connection'));
+        }
+      }, 25000);
     });
   }
 

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
 import { RoomWithMembership } from '../types';
+import { RoomCreationModal } from './RoomCreationModal';
+import { RoomBrowserModal } from './RoomBrowserModal';
 
 export function Sidebar() {
   const { user, logout } = useAuth();
@@ -10,8 +12,13 @@ export function Sidebar() {
     currentRoomId,
     setCurrentRoom,
     connectionStatus,
-    loading
+    loading,
+    createRoom,
+    joinRoom
   } = useChat();
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBrowserModal, setShowBrowserModal] = useState(false);
 
   const handleRoomClick = (roomId: string) => {
     setCurrentRoom(roomId);
@@ -71,9 +78,31 @@ export function Sidebar() {
       {/* Rooms List */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-3">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-            Chat Rooms
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Chat Rooms
+            </h3>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setShowBrowserModal(true)}
+                className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                title="Browse Public Rooms"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                title="Create Room"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -85,7 +114,13 @@ export function Sidebar() {
           ) : rooms.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sm text-gray-500">No rooms available</p>
-              <p className="text-xs text-gray-400 mt-1">Join a room to start chatting</p>
+              <p className="text-xs text-gray-400 mt-1">Create a room to start chatting</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-3 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+              >
+                Create Your First Room
+              </button>
             </div>
           ) : (
             <div className="space-y-1">
@@ -138,6 +173,20 @@ export function Sidebar() {
           Simple Chatbot v1.0
         </div>
       </div>
+
+      {/* Room Creation Modal */}
+      <RoomCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateRoom={createRoom}
+      />
+
+      {/* Room Browser Modal */}
+      <RoomBrowserModal
+        isOpen={showBrowserModal}
+        onClose={() => setShowBrowserModal(false)}
+        onJoinRoom={joinRoom}
+      />
     </div>
   );
 }

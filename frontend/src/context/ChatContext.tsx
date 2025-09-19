@@ -226,6 +226,12 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
 interface ChatContextType extends ChatState {
   // Room actions
   loadRooms: () => Promise<void>;
+  createRoom: (roomData: {
+    id: string;
+    name: string;
+    description?: string;
+    type: 'public' | 'private';
+  }) => Promise<void>;
   joinRoom: (roomId: string) => Promise<void>;
   leaveRoom: (roomId: string) => Promise<void>;
   setCurrentRoom: (roomId: string | null) => void;
@@ -391,6 +397,49 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
   };
 
+  const createRoom = async (roomData: {
+    id: string;
+    name: string;
+    description?: string;
+    type: 'public' | 'private';
+  }) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_ERROR', payload: null });
+
+      // Create room via API
+      const room = await apiService.createRoom(roomData);
+
+      // Add to local state as RoomWithMembership
+      const roomWithMembership: RoomWithMembership = {
+        ...room,
+        membership: {
+          userId: user!.id,
+          role: 'owner',
+          joinedAt: new Date().toISOString(),
+          notifications: true
+        },
+        memberCount: 1,
+        lastMessage: undefined
+      };
+
+      dispatch({ type: 'ADD_ROOM', payload: roomWithMembership });
+
+      // Auto-join the room via WebSocket
+      webSocketService.joinRoom(room.id);
+
+      // Set as current room
+      dispatch({ type: 'SET_CURRENT_ROOM', payload: room.id });
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create room';
+      dispatch({ type: 'SET_ERROR', payload: message });
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
   const joinRoom = async (roomId: string) => {
     try {
       // Join via API first
@@ -485,6 +534,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const value: ChatContextType = {
     ...state,
     loadRooms,
+    createRoom,
     joinRoom,
     leaveRoom,
     setCurrentRoom,
