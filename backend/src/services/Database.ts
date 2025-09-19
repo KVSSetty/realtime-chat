@@ -7,7 +7,11 @@ export class Database {
 
   constructor() {
     this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      user: 'chat_user',
+      host: 'localhost',
+      database: 'chat_db',
+      password: 'chat_password',
+      port: 5434,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,

@@ -131,7 +131,7 @@ export class RedisService {
     await this.client.setEx(key, 300, value); // 5 minute cache
   }
 
-  async getCachedMessageHistory(roomId: string, cursor?: string): Promise<any[] | null> {
+  async getCachedMessageHistory(roomId: string, cursor?: string): Promise<any | null> {
     const key = `cache:messages:${roomId}:${cursor || 'latest'}`;
     const value = await this.client.get(key);
 

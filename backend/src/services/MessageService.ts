@@ -92,7 +92,7 @@ export class MessageService {
     };
 
     // Cache the result
-    await redis.cacheMessageHistory(roomId, messageHistory, cursor);
+    await redis.cacheMessageHistory(roomId, messageHistory.messages, cursor);
 
     return messageHistory;
   }

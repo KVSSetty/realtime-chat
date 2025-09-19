@@ -78,47 +78,48 @@ export class WebSocketService {
   }
 
   private setupEventHandlers(): void {
-    this.io.on('connection', async (socket: AuthenticatedSocket) => {
-      console.log(`User ${socket.username} connected with socket ${socket.id}`);
+    this.io.on('connection', async (socket: Socket) => {
+      const authSocket = socket as AuthenticatedSocket;
+      console.log(`User ${authSocket.username} connected with socket ${authSocket.id}`);
 
       try {
         // Set up user session and presence
-        await this.handleUserConnection(socket);
+        await this.handleUserConnection(authSocket);
 
         // Connection events
-        socket.on('disconnect', () => this.handleDisconnection(socket));
+        authSocket.on('disconnect', () => this.handleDisconnection(authSocket));
 
         // Room management events
-        socket.on('join_room', (data) => this.handleJoinRoom(socket, data));
-        socket.on('leave_room', (data) => this.handleLeaveRoom(socket, data));
+        authSocket.on('join_room', (data) => this.handleJoinRoom(authSocket, data));
+        authSocket.on('leave_room', (data) => this.handleLeaveRoom(authSocket, data));
 
         // Messaging events
-        socket.on('send_message', (data) => this.handleSendMessage(socket, data));
-        socket.on('edit_message', (data) => this.handleEditMessage(socket, data));
-        socket.on('delete_message', (data) => this.handleDeleteMessage(socket, data));
+        authSocket.on('send_message', (data) => this.handleSendMessage(authSocket, data));
+        authSocket.on('edit_message', (data) => this.handleEditMessage(authSocket, data));
+        authSocket.on('delete_message', (data) => this.handleDeleteMessage(authSocket, data));
 
         // Presence events
-        socket.on('update_presence', (data) => this.handleUpdatePresence(socket, data));
+        authSocket.on('update_presence', (data) => this.handleUpdatePresence(authSocket, data));
 
         // Typing indicators
-        socket.on('start_typing', (data) => this.handleStartTyping(socket, data));
-        socket.on('stop_typing', (data) => this.handleStopTyping(socket, data));
+        authSocket.on('start_typing', (data) => this.handleStartTyping(authSocket, data));
+        authSocket.on('stop_typing', (data) => this.handleStopTyping(authSocket, data));
 
         // Health check
-        socket.on('ping', () => this.handlePing(socket));
+        authSocket.on('ping', () => this.handlePing(authSocket));
 
         // Error handling
-        socket.on('error', (error) => {
-          console.error(`Socket error for user ${socket.username}:`, error);
+        authSocket.on('error', (error) => {
+          console.error(`Socket error for user ${authSocket.username}:`, error);
         });
 
       } catch (error) {
         console.error('Error setting up socket connection:', error);
-        socket.emit('connect_error', {
+        authSocket.emit('connect_error', {
           error: 'connection_setup_failed',
           message: 'Failed to initialize connection'
         });
-        socket.disconnect(true);
+        authSocket.disconnect(true);
       }
     });
   }
