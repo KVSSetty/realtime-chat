@@ -267,6 +267,24 @@ export function ChatProvider({ children }: ChatProviderProps) {
       return;
     }
 
+    // Check current connection status when setting up listeners
+    const checkConnectionStatus = () => {
+      const currentConnectionState = webSocketService.connectionState;
+      if (currentConnectionState === 'connected') {
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' });
+      } else if (currentConnectionState === 'disconnected') {
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'disconnected' });
+      } else {
+        dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connecting' });
+      }
+    };
+
+    // Initial check
+    checkConnectionStatus();
+
+    // Check again after a short delay to catch any race conditions
+    const statusCheckTimeout = setTimeout(checkConnectionStatus, 100);
+
     // Connection events
     webSocketService.on('connected', (data) => {
       dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' });
@@ -373,6 +391,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
     // Cleanup function
     return () => {
+      // Clear the status check timeout
+      clearTimeout(statusCheckTimeout);
       // Remove all listeners (WebSocketService handles this internally)
     };
   }, [isAuthenticated, user]);
@@ -414,9 +434,12 @@ export function ChatProvider({ children }: ChatProviderProps) {
       const roomWithMembership: RoomWithMembership = {
         ...room,
         membership: {
+          id: `${room.id}-${user!.id}`,
           userId: user!.id,
+          roomId: room.id,
           role: 'owner',
           joinedAt: new Date().toISOString(),
+          lastReadAt: new Date().toISOString(),
           notifications: true
         },
         memberCount: 1,
@@ -482,9 +505,19 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const setCurrentRoom = (roomId: string | null) => {
     dispatch({ type: 'SET_CURRENT_ROOM', payload: roomId });
 
-    // Load messages for the room if not already loaded
-    if (roomId && !state.messages[roomId]) {
-      loadMessages(roomId);
+    // Join the room via WebSocket and load messages
+    if (roomId) {
+      // Join via WebSocket to receive real-time updates
+      try {
+        webSocketService.joinRoom(roomId);
+      } catch (error) {
+        console.error('Failed to join room via WebSocket:', error);
+      }
+
+      // Load messages if not already loaded
+      if (!state.messages[roomId]) {
+        loadMessages(roomId);
+      }
     }
   };
 

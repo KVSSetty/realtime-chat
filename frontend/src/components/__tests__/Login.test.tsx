@@ -46,7 +46,7 @@ describe('Login Component', () => {
   it('renders login form', () => {
     render(<Login onSwitchToRegister={mockOnSwitchToRegister} />);
 
-    expect(screen.getByText('Sign in to Simple Chatbot')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to Realtime Chat')).toBeInTheDocument();
     expect(screen.getByLabelText('Email address')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
@@ -56,9 +56,9 @@ describe('Login Component', () => {
     render(<Login onSwitchToRegister={mockOnSwitchToRegister} />);
 
     expect(screen.getByText('Demo accounts available after seeding the database:')).toBeInTheDocument();
-    expect(screen.getByText('alice@example.com / password123')).toBeInTheDocument();
-    expect(screen.getByText('bob@example.com / password123')).toBeInTheDocument();
-    expect(screen.getByText('charlie@example.com / password123')).toBeInTheDocument();
+    expect(screen.getByText('ram@example.com / password123')).toBeInTheDocument();
+    expect(screen.getByText('krishna@example.com / password123')).toBeInTheDocument();
+    expect(screen.getByText('vishnu@example.com / password123')).toBeInTheDocument();
   });
 
   it('calls onSwitchToRegister when create account link is clicked', () => {

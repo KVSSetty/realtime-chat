@@ -138,19 +138,47 @@ export class RoomService {
       ORDER BY r.updated_at DESC
     `, [userId]);
 
-    return result.rows.map(row => ({
-      ...this.mapRowToRoom(row),
-      memberCount: parseInt(row.member_count),
-      membership: {
-        id: row.membership_id,
-        userId: userId,
-        roomId: row.id,
-        role: row.role,
-        joinedAt: row.joined_at,
-        lastReadAt: row.last_read_at,
-        notifications: row.notifications
+    const rooms = await Promise.all(result.rows.map(async (row) => {
+      const room: RoomWithMembership = {
+        ...this.mapRowToRoom(row),
+        memberCount: parseInt(row.member_count),
+        membership: {
+          id: row.membership_id,
+          userId: userId,
+          roomId: row.id,
+          role: row.role,
+          joinedAt: row.joined_at,
+          lastReadAt: row.last_read_at,
+          notifications: row.notifications
+        }
+      };
+
+      // Get last message for this room
+      const lastMessageResult = await database.query(`
+        SELECT m.id, m.content, m.created_at, u.username
+        FROM messages m
+        JOIN users u ON m.user_id = u.id
+        WHERE m.room_id = $1
+        ORDER BY m.created_at DESC
+        LIMIT 1
+      `, [row.id]);
+
+      if (lastMessageResult.rows.length > 0) {
+        const lastMsg = lastMessageResult.rows[0];
+        room.lastMessage = {
+          id: lastMsg.id.toString(),
+          content: lastMsg.content,
+          createdAt: lastMsg.created_at,
+          user: {
+            username: lastMsg.username
+          }
+        };
       }
+
+      return room;
     }));
+
+    return rooms;
   }
 
   async getPublicRooms(limit: number = 20, offset: number = 0): Promise<RoomWithMembership[]> {
@@ -176,12 +204,22 @@ export class RoomService {
   async joinRoom(userId: string, roomId: string, role: string = 'member'): Promise<RoomMembership> {
     // Check if user is already a member
     const existing = await database.query(
-      'SELECT id FROM room_memberships WHERE user_id = $1 AND room_id = $2',
+      'SELECT id, user_id, room_id, role, joined_at, last_read_at, notifications FROM room_memberships WHERE user_id = $1 AND room_id = $2',
       [userId, roomId]
     );
 
     if (existing.rows.length > 0) {
-      throw new Error('User is already a member of this room');
+      // Return existing membership instead of throwing error
+      const membership = existing.rows[0];
+      return {
+        id: membership.id,
+        userId: membership.user_id,
+        roomId: membership.room_id,
+        role: membership.role,
+        joinedAt: membership.joined_at,
+        lastReadAt: membership.last_read_at,
+        notifications: membership.notifications
+      };
     }
 
     // Check room exists and is joinable

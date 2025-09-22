@@ -36,7 +36,7 @@ export function Login({ onSwitchToRegister }: LoginProps) {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to Simple Chatbot
+            Sign in to Realtime Chat
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
@@ -118,9 +118,9 @@ export function Login({ onSwitchToRegister }: LoginProps) {
               Demo accounts available after seeding the database:
             </p>
             <div className="mt-2 text-xs text-gray-500 space-y-1">
-              <div>alice@example.com / password123</div>
-              <div>bob@example.com / password123</div>
-              <div>charlie@example.com / password123</div>
+              <div>ram@example.com / password123</div>
+              <div>krishna@example.com / password123</div>
+              <div>vishnu@example.com / password123</div>
             </div>
           </div>
         </form>

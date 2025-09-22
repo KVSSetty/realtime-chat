@@ -26,7 +26,7 @@ export interface UpdateMessageData {
 }
 
 export interface MessageWithUser extends Message {
-  user: {
+  author: {
     id: string;
     username: string;
   };

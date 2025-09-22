@@ -30,7 +30,7 @@ const mockMessages = [
     author: {
       id: 'user1',
       username: 'alice',
-      email: 'alice@example.com'
+      email: 'ram@example.com'
     },
     createdAt: new Date('2024-01-01T10:00:00Z').toISOString(),
     roomId: 'room1'
@@ -42,7 +42,7 @@ const mockMessages = [
     author: {
       id: 'user2',
       username: 'bob',
-      email: 'bob@example.com'
+      email: 'krishna@example.com'
     },
     createdAt: new Date('2024-01-01T10:01:00Z').toISOString(),
     roomId: 'room1'
@@ -110,7 +110,7 @@ describe('MessageList Component', () => {
         author: {
           id: 'user1',
           username: 'alice',
-          email: 'alice@example.com'
+          email: 'ram@example.com'
         },
         createdAt: new Date('2024-01-01T10:00:00Z').toISOString(),
         roomId: 'room1'
@@ -122,7 +122,7 @@ describe('MessageList Component', () => {
         author: {
           id: 'user1',
           username: 'alice',
-          email: 'alice@example.com'
+          email: 'ram@example.com'
         },
         createdAt: new Date('2024-01-01T10:00:30Z').toISOString(),
         roomId: 'room1'
@@ -152,7 +152,7 @@ describe('MessageList Component', () => {
         author: {
           id: 'user1',
           username: 'alice',
-          email: 'alice@example.com'
+          email: 'ram@example.com'
         },
         createdAt: new Date().toISOString(),
         roomId: 'room1'
@@ -208,7 +208,7 @@ describe('MessageList Component', () => {
         author: {
           id: 'user1',
           username: 'alice',
-          email: 'alice@example.com'
+          email: 'ram@example.com'
         },
         createdAt: new Date('2024-01-01T09:00:00Z').toISOString(),
         roomId: 'room1'

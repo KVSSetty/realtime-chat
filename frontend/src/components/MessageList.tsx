@@ -19,6 +19,18 @@ export function MessageList({ messages, typingUsers }: MessageListProps) {
     scrollToBottom();
   }, [messages, typingUsers]);
 
+  // Don't render if user is not available
+  if (!user) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -54,10 +66,15 @@ export function MessageList({ messages, typingUsers }: MessageListProps) {
   };
 
   const isFromCurrentUser = (message: Message) => {
-    return message.author.id === user?.id;
+    return user && message.author && message.author.id === user.id;
   };
 
   const renderMessage = (message: Message) => {
+    // Safety check for message structure
+    if (!message || !message.id || !message.author) {
+      return null;
+    }
+
     const isCurrentUser = isFromCurrentUser(message);
     const isSystemMessage = message.type !== 'text';
 
@@ -144,23 +161,25 @@ export function MessageList({ messages, typingUsers }: MessageListProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-1">
-      {messages.map((message, index) => {
-        const previousMessage = index > 0 ? messages[index - 1] : undefined;
-        const showDateDivider = shouldShowDateDivider(message, previousMessage);
+      {messages
+        .filter(message => message && message.id && message.author) // Filter out invalid messages
+        .map((message, index) => {
+          const previousMessage = index > 0 ? messages[index - 1] : undefined;
+          const showDateDivider = shouldShowDateDivider(message, previousMessage);
 
-        return (
-          <React.Fragment key={message.id}>
-            {showDateDivider && (
-              <div className="flex justify-center my-6">
-                <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
-                  {formatDate(message.createdAt)}
+          return (
+            <React.Fragment key={message.id}>
+              {showDateDivider && (
+                <div className="flex justify-center my-6">
+                  <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
+                    {formatDate(message.createdAt)}
+                  </div>
                 </div>
-              </div>
-            )}
-            {renderMessage(message)}
-          </React.Fragment>
-        );
-      })}
+              )}
+              {renderMessage(message)}
+            </React.Fragment>
+          );
+        })}
 
       {renderTypingIndicator()}
       <div ref={messagesEndRef} />

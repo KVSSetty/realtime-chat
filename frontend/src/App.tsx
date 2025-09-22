@@ -14,7 +14,7 @@ function AuthWrapper() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" message="Connecting to Simple Chatbot..." />
+        <LoadingSpinner size="lg" message="Connecting to Realtime Chat..." />
       </div>
     );
   }

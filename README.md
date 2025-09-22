@@ -53,9 +53,9 @@ Real-time chat system with WebSocket messaging, message persistence, and user pr
 
 ### Default Demo Users
 ✅ Available after setup (automatically seeded):
-- **alice@example.com** / password123
-- **bob@example.com** / password123
-- **charlie@example.com** / password123
+- **ram@example.com** / password123
+- **krishna@example.com** / password123
+- **vishnu@example.com** / password123
 
 ## How to Use
 

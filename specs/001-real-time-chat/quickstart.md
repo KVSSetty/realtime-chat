@@ -13,9 +13,9 @@ This quickstart guide validates the core user scenarios from the feature specifi
   - Redis server for presence management
   - Frontend application accessible at localhost:3001
 - Test user accounts created:
-  - alice@example.com / password123
-  - bob@example.com / password123
-  - charlie@example.com / password123
+  - ram@example.com / password123
+  - krishna@example.com / password123
+  - vishnu@example.com / password123
 
 ## Test Scenario 1: User Registration and Authentication
 

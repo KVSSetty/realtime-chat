@@ -170,7 +170,7 @@ export function Sidebar() {
       {/* Footer */}
       <div className="p-3 border-t border-gray-200 bg-white">
         <div className="text-xs text-gray-500 text-center">
-          Simple Chatbot v1.0
+          Realtime Chat v1.0
         </div>
       </div>
 

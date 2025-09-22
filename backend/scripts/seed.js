@@ -13,18 +13,18 @@ async function seedDatabase() {
     // Create test users
     const testUsers = [
       {
-        username: 'alice',
-        email: 'alice@example.com',
+        username: 'ram',
+        email: 'ram@example.com',
         password: 'password123'
       },
       {
-        username: 'bob',
-        email: 'bob@example.com',
+        username: 'krishna',
+        email: 'krishna@example.com',
         password: 'password123'
       },
       {
-        username: 'charlie',
-        email: 'charlie@example.com',
+        username: 'vishnu',
+        email: 'vishnu@example.com',
         password: 'password123'
       }
     ];

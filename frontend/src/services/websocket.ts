@@ -214,16 +214,24 @@ class WebSocketService {
   private handleReconnection(token: string): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error('Max reconnection attempts reached');
+      this.emit('connect_error', {
+        error: 'max_reconnect_attempts',
+        message: 'Could not reconnect after multiple attempts',
+        timestamp: new Date().toISOString()
+      });
       return;
     }
 
     this.reconnectAttempts++;
-    const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
+    const delay = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, 30000); // Max 30 seconds
 
     console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     setTimeout(() => {
-      this.connect(token).catch(console.error);
+      this.connect(token).catch((error) => {
+        console.error('Reconnection failed:', error);
+        // Don't immediately try again, let the normal disconnect handler manage it
+      });
     }, delay);
   }
 
@@ -342,7 +350,9 @@ class WebSocketService {
 
   get connectionState(): string {
     if (!this.socket) return 'disconnected';
-    return this.socket.connected ? 'connected' : 'disconnected';
+    if (this.socket.connected && this.isConnected) return 'connected';
+    if (this.socket.connected && !this.isConnected) return 'connecting';
+    return 'disconnected';
   }
 }
 

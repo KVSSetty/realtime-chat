@@ -82,7 +82,7 @@ export class MessageService {
         metadata: row.metadata || {},
         createdAt: row.created_at,
         editedAt: row.edited_at,
-        user: {
+        author: {
           id: row.user_id,
           username: row.username
         }
@@ -194,7 +194,7 @@ export class MessageService {
       metadata: row.metadata || {},
       createdAt: row.created_at,
       editedAt: row.edited_at,
-      user: {
+      author: {
         id: row.user_id,
         username: row.username
       }

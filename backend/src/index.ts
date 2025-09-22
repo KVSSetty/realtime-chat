@@ -95,7 +95,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 // Initialize services and start server
 async function startServer() {
   try {
-    console.log('🚀 Starting Simple Chatbot Server...');
+    console.log('🚀 Starting Realtime Chat Server...');
 
     // Test database connection
     console.log('📊 Connecting to database...');

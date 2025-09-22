@@ -34,6 +34,32 @@ class ApiService {
     const data = await response.json();
 
     if (!response.ok) {
+      // If we get a 401 and it's not a login/register endpoint, try to refresh token
+      if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+        const token = this.getToken();
+        if (token && !endpoint.includes('/auth/refresh')) {
+          try {
+            const refreshedSession = await this.refreshToken();
+            // Retry the original request with new token
+            const retryResponse = await fetch(url, {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${refreshedSession.token}`
+              },
+              ...options
+            });
+
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              return retryData;
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            // Continue with original error
+          }
+        }
+      }
+
       throw new Error(data.message || 'API request failed');
     }
 

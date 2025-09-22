@@ -34,7 +34,7 @@ jest.mock('../../services/api', () => ({
 const mockUser = {
   id: 'user1',
   username: 'alice',
-  email: 'alice@example.com',
+  email: 'ram@example.com',
   lastSeenAt: new Date().toISOString()
 };
 
@@ -118,7 +118,7 @@ describe('Sidebar Component', () => {
     );
 
     expect(screen.getByText('alice')).toBeInTheDocument();
-    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    expect(screen.getByText('ram@example.com')).toBeInTheDocument();
   });
 
   it('renders my rooms section', () => {

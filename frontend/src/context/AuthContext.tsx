@@ -63,7 +63,8 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'CLEAR_ERROR':
       return {
         ...state,
-        error: null
+        error: null,
+        loading: false
       };
 
     default:
@@ -105,15 +106,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await webSocketService.connect(token);
         } catch (error) {
           console.error('Failed to initialize auth:', error);
-          // Token might be expired, clear it
-          apiService.logout();
-          dispatch({ type: 'AUTH_LOGOUT' });
+          // Only logout if it's definitely a token issue
+          if (error instanceof Error && error.message.includes('Token has expired')) {
+            console.log('Token expired during initialization, clearing session');
+            apiService.logout();
+            dispatch({ type: 'AUTH_LOGOUT' });
+          } else {
+            // For other errors, just mark as not loading but keep trying
+            dispatch({ type: 'CLEAR_ERROR' });
+          }
         }
       }
     };
 
     initializeAuth();
   }, []);
+
+  // Periodic token validation (every 30 minutes)
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
+
+    const validateToken = async () => {
+      try {
+        await apiService.getCurrentUser();
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        if (error instanceof Error && error.message.includes('Token has expired')) {
+          console.log('Token expired during validation, logging out');
+          logout();
+        }
+      }
+    };
+
+    // Validate immediately, then every 30 minutes
+    validateToken();
+    const interval = setInterval(validateToken, 30 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [state.isAuthenticated]);
 
   // Cleanup WebSocket on unmount or logout
   useEffect(() => {
@@ -133,7 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         payload: session
       });
 
-      // Connect to WebSocket
+      // Connect to WebSocket - this will establish connection before ChatContext initializes
       await webSocketService.connect(session.token);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Login failed';

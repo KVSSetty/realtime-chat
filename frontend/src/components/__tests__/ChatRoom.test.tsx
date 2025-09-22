@@ -34,7 +34,7 @@ const mockMessages = [
     author: {
       id: 'user1',
       username: 'alice',
-      email: 'alice@example.com'
+      email: 'ram@example.com'
     },
     createdAt: new Date('2024-01-01T10:00:00Z').toISOString(),
     roomId: 'room1'
